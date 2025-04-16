@@ -7,16 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ImageIcon, DownloadIcon, ShareIcon, Loader2, ExternalLink, Facebook, Twitter, Linkedin, Copy, Mail } from "lucide-react"
+import { ImageIcon, DownloadIcon, Loader2 } from "lucide-react"
 import Image from "next/image"
 import { generateImage } from "@/lib/generate-image"
 import { useToast } from "@/hooks/use-toast"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 
 export function ImageGenerator() {
   const [prompt, setPrompt] = useState("")
@@ -125,69 +119,6 @@ export function ImageGenerator() {
       // For URL images
       window.open(generatedImage, "_blank")
     }
-  }
-
-  const handleShare = async () => {
-    if (!generatedImage) return
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: "My AI Generated Image",
-          text: prompt,
-          url: generatedImage.startsWith("data:") ? window.location.href : generatedImage,
-        })
-      } catch (err) {
-        // Only show error if it's not a user cancellation
-        if (err instanceof Error && !err.message.includes('canceled') && err.name !== 'AbortError') {
-          console.error("Error sharing:", err)
-          toast({
-            title: "Sharing failed",
-            description: "Could not share the image. Copied link to clipboard instead.",
-          })
-          // Fallback to clipboard
-          navigator.clipboard.writeText(window.location.href)
-        }
-      }
-    } else {
-      // Fallback - copy to clipboard
-      navigator.clipboard.writeText(window.location.href)
-      toast({
-        title: "Link copied",
-        description: "Image link copied to clipboard!",
-      })
-    }
-  }
-
-  // Social sharing methods
-  const shareToFacebook = () => {
-    const url = encodeURIComponent(window.location.href)
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank')
-  }
-
-  const shareToTwitter = () => {
-    const url = encodeURIComponent(window.location.href)
-    const text = encodeURIComponent(`Check out this AI-generated image: ${prompt}`)
-    window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, '_blank')
-  }
-
-  const shareToLinkedIn = () => {
-    const url = encodeURIComponent(window.location.href)
-    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank')
-  }
-
-  const shareByEmail = () => {
-    const subject = encodeURIComponent('Check out this AI-generated image')
-    const body = encodeURIComponent(`I created this image using an AI generator: ${prompt}\n\n${window.location.href}`)
-    window.open(`mailto:?subject=${subject}&body=${body}`, '_blank')
-  }
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(window.location.href)
-    toast({
-      title: "Link copied",
-      description: "Image link copied to clipboard!",
-    })
   }
 
   return (
@@ -301,41 +232,6 @@ export function ImageGenerator() {
                 <DownloadIcon className="mr-2 h-5 w-5" />
                 Download
               </Button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full py-6 text-white border-gray-700 hover:bg-gray-800 hover:text-blue-400 transition-all">
-                    <ShareIcon className="mr-2 h-5 w-5" />
-                    Share
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-gray-800 border border-gray-700 text-white w-52">
-                  <DropdownMenuItem onClick={handleShare} className="cursor-pointer hover:bg-gray-700 focus:bg-gray-700">
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Share via device
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={shareToFacebook} className="cursor-pointer hover:bg-gray-700 focus:bg-gray-700">
-                    <Facebook className="mr-2 h-4 w-4" />
-                    Facebook
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={shareToTwitter} className="cursor-pointer hover:bg-gray-700 focus:bg-gray-700">
-                    <Twitter className="mr-2 h-4 w-4" />
-                    Twitter
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={shareToLinkedIn} className="cursor-pointer hover:bg-gray-700 focus:bg-gray-700">
-                    <Linkedin className="mr-2 h-4 w-4" />
-                    LinkedIn
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={shareByEmail} className="cursor-pointer hover:bg-gray-700 focus:bg-gray-700">
-                    <Mail className="mr-2 h-4 w-4" />
-                    Email
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={copyToClipboard} className="cursor-pointer hover:bg-gray-700 focus:bg-gray-700">
-                    <Copy className="mr-2 h-4 w-4" />
-                    Copy link
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
           </div>
         ) : (
