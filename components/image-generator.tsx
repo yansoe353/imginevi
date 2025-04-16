@@ -7,20 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ImageIcon, DownloadIcon, ShareIcon, Loader2, Lock, Facebook, Twitter, Linkedin, Copy, Mail, ExternalLink } from "lucide-react"
+import { ImageIcon, DownloadIcon, ShareIcon, Loader2, ExternalLink, Facebook, Twitter, Linkedin, Copy, Mail } from "lucide-react"
 import Image from "next/image"
 import { generateImage } from "@/lib/generate-image"
 import { useToast } from "@/hooks/use-toast"
-import { useAuth } from "@/context/auth-context"
-import { createClient } from "@/utils/supabase/client"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,56 +26,24 @@ export function ImageGenerator() {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [debugInfo, setDebugInfo] = useState<string | null>(null)
-  const [hasGeneratedImage, setHasGeneratedImage] = useState(false)
-  const [showLoginDialog, setShowLoginDialog] = useState(false)
+  const [generationsToday, setGenerationsToday] = useState(0)
+  const [generationLimit] = useState(20)
   const { toast } = useToast()
-  const { user, signInWithGoogle } = useAuth()
-  const supabase = createClient()
 
   useEffect(() => {
-    // Check if user has already generated an image (persists after reload)
-    if (!user) {
-      const hasGeneratedBefore = localStorage.getItem('hasGeneratedImage') === 'true'
-      setHasGeneratedImage(hasGeneratedBefore)
-      
-      if (hasGeneratedBefore) {
-        toast({
-          title: "Free trial used",
-          description: "You've already used your free image generation. Please sign in to continue.",
-        })
-      }
+    // Check if the user has already generated images today
+    const today = new Date().toDateString()
+    const storedDate = localStorage.getItem('generationDate')
+    const storedCount = parseInt(localStorage.getItem('generationCount') || '0', 10)
+
+    if (storedDate === today) {
+      setGenerationsToday(storedCount)
+    } else {
+      localStorage.setItem('generationDate', today)
+      localStorage.setItem('generationCount', '0')
+      setGenerationsToday(0)
     }
-  }, [user, toast])
-
-  // Save image to Supabase
-  const saveImageToSupabase = async (imageUrl: string) => {
-    if (!user) return
-
-    try {
-      const { data, error } = await supabase
-        .from('images')
-        .insert([
-          {
-            user_id: user.id,
-            image_url: imageUrl,
-            prompt,
-            style,
-            aspect_ratio: aspectRatio
-          }
-        ])
-
-      if (error) throw error
-
-      console.log('Image saved to Supabase:', data)
-    } catch (err) {
-      console.error('Error saving image to Supabase:', err)
-      toast({
-        title: "Error saving image",
-        description: "Your image was generated but couldn't be saved to your library.",
-        variant: "destructive",
-      })
-    }
-  }
+  }, [])
 
   const handleGenerate = async () => {
     if (!prompt) {
@@ -97,9 +55,12 @@ export function ImageGenerator() {
       return
     }
 
-    // Check if non-logged-in user has already generated an image
-    if (!user && hasGeneratedImage) {
-      setShowLoginDialog(true)
+    if (generationsToday >= generationLimit) {
+      toast({
+        title: "Daily limit reached",
+        description: `You have reached your daily limit of ${generationLimit} image generations.`,
+        variant: "destructive",
+      })
       return
     }
 
@@ -121,19 +82,10 @@ export function ImageGenerator() {
       }
 
       setGeneratedImage(imageUrl)
-      setHasGeneratedImage(true)
-      
-      // Store that the user has generated an image
-      if (!user) {
-        localStorage.setItem('hasGeneratedImage', 'true')
-      }
-      
-      console.log("Image generation successful")
+      setGenerationsToday(generationsToday + 1)
+      localStorage.setItem('generationCount', (generationsToday + 1).toString())
 
-      // Save image to Supabase if user is logged in
-      if (user) {
-        await saveImageToSupabase(imageUrl)
-      }
+      console.log("Image generation successful")
 
       toast({
         title: "Image generated",
@@ -238,10 +190,6 @@ export function ImageGenerator() {
     })
   }
 
-  const handlePromptGoogleSignIn = () => {
-    signInWithGoogle()
-  }
-
   return (
     <div className="space-y-8 w-full">
       <Card className="border border-gray-800 bg-gray-900 shadow-xl overflow-hidden">
@@ -304,7 +252,7 @@ export function ImageGenerator() {
                 </Select>
               </div>
               <div className="flex items-end">
-                <Button onClick={handleGenerate} className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors" disabled={!prompt || loading || (!user && hasGeneratedImage)}>
+                <Button onClick={handleGenerate} className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors" disabled={!prompt || loading || generationsToday >= generationLimit}>
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -319,52 +267,9 @@ export function ImageGenerator() {
                 </Button>
               </div>
             </div>
-            
-            {!user && (
-              <div className="bg-gray-800/50 border border-gray-700 rounded-md p-3 text-sm text-gray-300 flex items-center">
-                <Lock className="h-4 w-4 mr-2 text-yellow-500" />
-                <span>
-                  <span className="font-medium">Free trial:</span> Generate 1 image without signing in. 
-                  <span className="text-blue-400 underline cursor-pointer ml-1" onClick={handlePromptGoogleSignIn}>
-                    Sign in with Google
-                  </span> for unlimited generations.
-                </span>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
-
-      <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
-        <DialogContent className="bg-gray-900 border border-gray-700 text-white sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Sign in to continue</DialogTitle>
-            <DialogDescription className="text-gray-400">
-              You've used your free generation. Sign in with Google to unlock unlimited image generations.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-center py-4">
-            <ImageIcon className="h-24 w-24 text-blue-400" />
-          </div>
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowLoginDialog(false)} 
-              className="border-gray-700 hover:bg-gray-800 text-white"
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={() => {
-                setShowLoginDialog(false)
-                handlePromptGoogleSignIn()
-              }}
-              className="bg-blue-600 hover:bg-blue-700 text-white">
-              Sign in with Google
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <div className="space-y-6">
         <h2 className="text-3xl font-bold tracking-tight text-white">Your Generated Image</h2>
@@ -396,7 +301,7 @@ export function ImageGenerator() {
                 <DownloadIcon className="mr-2 h-5 w-5" />
                 Download
               </Button>
-              
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="w-full py-6 text-white border-gray-700 hover:bg-gray-800 hover:text-blue-400 transition-all">
@@ -432,18 +337,6 @@ export function ImageGenerator() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            
-            {!user && hasGeneratedImage && (
-              <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4 text-white">
-                <h3 className="font-bold mb-2">Want to save this image?</h3>
-                <p className="text-gray-300 mb-4">Sign in to save this image to your library and generate more images!</p>
-                <Button 
-                  onClick={handlePromptGoogleSignIn}
-                  className="bg-blue-600 hover:bg-blue-700 text-white">
-                  Sign in with Google
-                </Button>
-              </div>
-            )}
           </div>
         ) : (
           <div className="flex h-[500px] items-center justify-center rounded-xl border border-dashed border-gray-700 bg-gray-900">
