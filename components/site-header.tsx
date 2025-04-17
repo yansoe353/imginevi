@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 export function SiteHeader() {
-  const { user, signOut, signInWithGoogle } = useAuth()
+  const { user, signOut } = useAuth()
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-gray-800 bg-black py-2">
@@ -29,7 +29,7 @@ export function SiteHeader() {
                 Generate
               </Button>
             </Link>
-            
+
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -57,7 +57,7 @@ export function SiteHeader() {
                     </DropdownMenuItem>
                   </Link>
                   <DropdownMenuSeparator className="bg-gray-800" />
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => signOut()}
                     className="cursor-pointer hover:bg-gray-800 text-red-400"
                   >
@@ -66,19 +66,10 @@ export function SiteHeader() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            ) : (
-              <Button 
-                variant="outline" 
-                className="bg-transparent hover:bg-gray-900 text-white border border-gray-700"
-                onClick={() => signInWithGoogle()}
-              >
-                Sign in with Google
-              </Button>
-            )}
+            ) : null}
           </nav>
         </div>
       </div>
     </header>
   )
 }
-
