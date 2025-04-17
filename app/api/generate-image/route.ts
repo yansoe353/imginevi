@@ -1,6 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { type NextRequest, NextResponse } from "next/server"
-import sharp from "sharp"
 
 export async function POST(request: NextRequest) {
   try {
@@ -120,22 +119,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Add text watermark to the image
-    const imageBuffer = Buffer.from(imageData.split(",")[1], "base64")
-    const watermarkText = "Generated with Walone AI"
-    const watermarkedImageBuffer = await sharp(imageBuffer)
-      .composite([
-        {
-          input: Buffer.from(`<svg><text x="10" y="20" font-size="20" fill="white">${watermarkText}</text></svg>`),
-          gravity: "southeast",
-        },
-      ])
-      .toBuffer()
-
-    const watermarkedImageData = `data:image/png;base64,${watermarkedImageBuffer.toString("base64")}`
-
-    console.log("Returning image data with watermark")
-    return NextResponse.json({ imageUrl: watermarkedImageData })
+    console.log("Returning image data")
+    return NextResponse.json({ imageUrl: imageData })
   } catch (error) {
     console.error("Error in API route:", error)
 
@@ -152,4 +137,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     )
   }
-}
+} 
