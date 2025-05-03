@@ -20,13 +20,39 @@ export function ImageGenerator() {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [debugInfo, setDebugInfo] = useState<string | null>(null)
+  const [generationsToday, setGenerationsToday] = useState(0)
+  const [generationLimit] = useState(20)
   const { toast } = useToast()
+
+  useEffect(() => {
+    // Check if the user has already generated images today
+    const today = new Date().toDateString()
+    const storedDate = localStorage.getItem('generationDate')
+    const storedCount = parseInt(localStorage.getItem('generationCount') || '0', 10)
+
+    if (storedDate === today) {
+      setGenerationsToday(storedCount)
+    } else {
+      localStorage.setItem('generationDate', today)
+      localStorage.setItem('generationCount', '0')
+      setGenerationsToday(0)
+    }
+  }, [])
 
   const handleGenerate = async () => {
     if (!prompt) {
       toast({
         title: "Prompt required",
         description: "Please enter a description of the image you want to generate.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (generationsToday >= generationLimit) {
+      toast({
+        title: "Daily limit reached",
+        description: `You have reached your daily limit of ${generationLimit} image generations.`,
         variant: "destructive",
       })
       return
@@ -50,6 +76,8 @@ export function ImageGenerator() {
       }
 
       setGeneratedImage(imageUrl)
+      setGenerationsToday(generationsToday + 1)
+      localStorage.setItem('generationCount', (generationsToday + 1).toString())
 
       console.log("Image generation successful")
 
@@ -155,7 +183,7 @@ export function ImageGenerator() {
                 </Select>
               </div>
               <div className="flex items-end">
-                <Button onClick={handleGenerate} className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors" disabled={!prompt || loading}>
+                <Button onClick={handleGenerate} className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors" disabled={!prompt || loading || generationsToday >= generationLimit}>
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
