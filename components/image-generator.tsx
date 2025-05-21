@@ -21,7 +21,7 @@ export function ImageGenerator() {
   const [error, setError] = useState<string | null>(null)
   const [debugInfo, setDebugInfo] = useState<string | null>(null)
   const [generationsToday, setGenerationsToday] = useState(0)
-  const [generationLimit] = useState(20)
+  const [generationLimit] = useState(200)
   const { toast } = useToast()
 
   useEffect(() => {
